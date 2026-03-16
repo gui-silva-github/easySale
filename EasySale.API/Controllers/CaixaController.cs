@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using EasySale.API.UseCases.Caixa.Abrir;
 using EasySale.API.UseCases.Caixa.Fechar;
 using EasySale.API.UseCases.Caixa.GetAll;
 using EasySale.API.UseCases.Caixa.GetById;
 using EasySale.API.UseCases.Caixa.ListarAbertos;
 using EasySale.API.UseCases.Caixa.ListarDisponiveis;
+using EasySale.API.UseCases.Caixa.ObterAberturaAtual;
+using EasySale.API.UseCases.Caixa.ConferenciaCegaGet;
+using EasySale.API.UseCases.Caixa.ConferenciaCegaPost;
 using EasySale.API.UseCases.Caixa.Register;
+using EasySale.API.UseCases.Caixa.RegistrarMovimento;
 using EasySale.API.UseCases.Caixa.Sair;
 using EasySale.API.UseCases.Caixa.Selecionar;
 using Communication.Requests.Caixa;
@@ -27,6 +31,10 @@ namespace EasySale.API.Controllers
         private readonly ListarCaixasAbertosUseCase _listarCaixasAbertosUseCase;
         private readonly SelecionarCaixaUseCase _selecionarCaixaUseCase;
         private readonly SairCaixaUseCase _sairCaixaUseCase;
+        private readonly ObterAberturaAtualUseCase _obterAberturaAtualUseCase;
+        private readonly ConferenciaCegaGetUseCase _conferenciaCegaGetUseCase;
+        private readonly ConferenciaCegaPostUseCase _conferenciaCegaPostUseCase;
+        private readonly RegistrarMovimentoCaixaUseCase _registrarMovimentoCaixaUseCase;
 
         public CaixaController(
             RegisterCaixaUseCase registerCaixaUseCase,
@@ -37,7 +45,11 @@ namespace EasySale.API.Controllers
             ListarCaixasDisponiveisUseCase listarCaixasDisponiveisUseCase,
             ListarCaixasAbertosUseCase listarCaixasAbertosUseCase,
             SelecionarCaixaUseCase selecionarCaixaUseCase,
-            SairCaixaUseCase sairCaixaUseCase)
+            SairCaixaUseCase sairCaixaUseCase,
+            ObterAberturaAtualUseCase obterAberturaAtualUseCase,
+            ConferenciaCegaGetUseCase conferenciaCegaGetUseCase,
+            ConferenciaCegaPostUseCase conferenciaCegaPostUseCase,
+            RegistrarMovimentoCaixaUseCase registrarMovimentoCaixaUseCase)
         {
             _registerCaixaUseCase = registerCaixaUseCase;
             _abrirCaixaUseCase = abrirCaixaUseCase;
@@ -48,6 +60,58 @@ namespace EasySale.API.Controllers
             _listarCaixasAbertosUseCase = listarCaixasAbertosUseCase;
             _selecionarCaixaUseCase = selecionarCaixaUseCase;
             _sairCaixaUseCase = sairCaixaUseCase;
+            _obterAberturaAtualUseCase = obterAberturaAtualUseCase;
+            _conferenciaCegaGetUseCase = conferenciaCegaGetUseCase;
+            _conferenciaCegaPostUseCase = conferenciaCegaPostUseCase;
+            _registrarMovimentoCaixaUseCase = registrarMovimentoCaixaUseCase;
+        }
+
+        /// <summary>
+        /// Obtém a abertura atual. Enviar aberturaId por query (ex.: ?aberturaId=guid) ou o front pode armazenar em cookie e enviar.
+        /// </summary>
+        [HttpGet]
+        [Route("ObterAberturaAtual")]
+        [ProducesResponseType(typeof(ResponseAberturaCaixaJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult ObterAberturaAtual([FromQuery] Guid? aberturaId, [FromQuery] Guid? caixaId)
+        {
+            var aberturaIdFromCookie = Request.Cookies["AberturaId"];
+            var id = aberturaId ?? (string.IsNullOrEmpty(aberturaIdFromCookie) ? null : Guid.TryParse(aberturaIdFromCookie, out var guid) ? (Guid?)guid : null);
+            if (!id.HasValue && !caixaId.HasValue)
+                return BadRequest(new ResponseErrorMessagesJSON(new List<string> { "Informe aberturaId ou caixaId (query ou cookie AberturaId)." }));
+            var response = _obterAberturaAtualUseCase.Execute(id, caixaId);
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("Abertura/{aberturaId}/ConferenciaCega")]
+        [ProducesResponseType(typeof(ResponseConferenciaCegaJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult GetConferenciaCega([FromRoute] Guid aberturaId)
+        {
+            var response = _conferenciaCegaGetUseCase.Execute(aberturaId);
+            return Ok(response);
+        }
+
+        [HttpPost]
+        [Route("Abertura/{aberturaId}/ConferenciaCega")]
+        [ProducesResponseType(typeof(ResponseConferenciaCegaResultadoJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult PostConferenciaCega([FromRoute] Guid aberturaId, [FromBody] RequestConferenciaCegaJSON request)
+        {
+            var response = _conferenciaCegaPostUseCase.Execute(aberturaId, request);
+            return Ok(response);
+        }
+
+        [HttpPost]
+        [Route("Abertura/{aberturaId}/Movimento")]
+        [ProducesResponseType(typeof(ResponseMovimentoCaixaJSON), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult RegistrarMovimento([FromRoute] Guid aberturaId, [FromBody] RequestMovimentoCaixaJSON request)
+        {
+            var response = _registrarMovimentoCaixaUseCase.Execute(aberturaId, request);
+            return Created(string.Empty, response);
         }
 
         [HttpPost]
@@ -67,6 +131,13 @@ namespace EasySale.API.Controllers
         public IActionResult Abrir([FromBody] RequestAbrirCaixaJSON request, [FromQuery] Guid caixaId)
         {
             var response = _abrirCaixaUseCase.Execute(caixaId, request);
+            Response.Cookies.Append("AberturaId", response.Id.ToString(), new CookieOptions
+            {
+                HttpOnly = false,
+                SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                Path = "/",
+                MaxAge = TimeSpan.FromHours(12)
+            });
             return Created(string.Empty, response);
         }
 
@@ -124,13 +195,20 @@ namespace EasySale.API.Controllers
 
         [HttpPost]
         [Route("{id}/Selecionar")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status400BadRequest)]
         public IActionResult Selecionar([FromRoute] Guid id)
         {
-            _selecionarCaixaUseCase.Execute(id);
-            return NoContent();
+            var aberturaId = _selecionarCaixaUseCase.Execute(id);
+            Response.Cookies.Append("AberturaId", aberturaId.ToString(), new CookieOptions
+            {
+                HttpOnly = false,
+                SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                Path = "/",
+                MaxAge = TimeSpan.FromHours(12)
+            });
+            return Ok(new { aberturaId });
         }
 
         [HttpPost]

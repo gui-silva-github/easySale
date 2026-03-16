@@ -1,10 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using EasySale.API.UseCases.Venda.AdicionarItem;
+using EasySale.API.UseCases.Venda.AdicionarPagamento;
+using EasySale.API.UseCases.Venda.AtualizarVenda;
 using EasySale.API.UseCases.Venda.CriarVenda;
 using EasySale.API.UseCases.Venda.FinalizarVenda;
+using EasySale.API.UseCases.Venda.LimparPagamentos;
+using EasySale.API.UseCases.Venda.ListarFormasPagamento;
 using EasySale.API.UseCases.Venda.ListarVendas;
 using EasySale.API.UseCases.Venda.ObterVenda;
 using EasySale.API.UseCases.Venda.RemoverItem;
+using EasySale.API.UseCases.Venda.RemoverVenda;
 using Communication.Requests.Venda;
 using Communication.Responses.Venda;
 using Communication.Responses.Error;
@@ -21,6 +26,11 @@ namespace EasySale.API.Controllers
         private readonly ObterVendaUseCase _obterVendaUseCase;
         private readonly FinalizarVendaUseCase _finalizarVendaUseCase;
         private readonly ListarVendasUseCase _listarVendasUseCase;
+        private readonly AtualizarVendaUseCase _atualizarVendaUseCase;
+        private readonly RemoverVendaUseCase _removerVendaUseCase;
+        private readonly AdicionarPagamentoVendaUseCase _adicionarPagamentoVendaUseCase;
+        private readonly LimparPagamentosVendaUseCase _limparPagamentosVendaUseCase;
+        private readonly ListarFormasPagamentoUseCase _listarFormasPagamentoUseCase;
 
         public VendaController(
             CriarVendaUseCase criarVendaUseCase,
@@ -28,15 +38,34 @@ namespace EasySale.API.Controllers
             RemoverItemVendaUseCase removerItemVendaUseCase,
             ObterVendaUseCase obterVendaUseCase,
             FinalizarVendaUseCase finalizarVendaUseCase,
-            ListarVendasUseCase listarVendasUseCase
+            ListarVendasUseCase listarVendasUseCase,
+            AtualizarVendaUseCase atualizarVendaUseCase,
+            RemoverVendaUseCase removerVendaUseCase,
+            AdicionarPagamentoVendaUseCase adicionarPagamentoVendaUseCase,
+            LimparPagamentosVendaUseCase limparPagamentosVendaUseCase,
+            ListarFormasPagamentoUseCase listarFormasPagamentoUseCase
         )
         {
-            _criarVendaUseCase = criarVendaUseCase; 
+            _criarVendaUseCase = criarVendaUseCase;
             _adicionarItemVendaUseCase = adicionarItemVendaUseCase;
             _removerItemVendaUseCase = removerItemVendaUseCase;
             _obterVendaUseCase = obterVendaUseCase;
             _finalizarVendaUseCase = finalizarVendaUseCase;
             _listarVendasUseCase = listarVendasUseCase;
+            _atualizarVendaUseCase = atualizarVendaUseCase;
+            _removerVendaUseCase = removerVendaUseCase;
+            _adicionarPagamentoVendaUseCase = adicionarPagamentoVendaUseCase;
+            _limparPagamentosVendaUseCase = limparPagamentosVendaUseCase;
+            _listarFormasPagamentoUseCase = listarFormasPagamentoUseCase;
+        }
+
+        [HttpGet]
+        [Route("FormasPagamento")]
+        [ProducesResponseType(typeof(List<ResponseFormaPagamentoJSON>), StatusCodes.Status200OK)]
+        public IActionResult ListarFormasPagamento()
+        {
+            var response = _listarFormasPagamentoUseCase.Execute();
+            return Ok(response);
         }
 
         [HttpPost]
@@ -90,9 +119,53 @@ namespace EasySale.API.Controllers
             return Ok(response);
         }
 
+        [HttpPut]
+        [Route("{vendaId}")]
+        [ProducesResponseType(typeof(ResponseVendaJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult AtualizarVenda([FromRoute] Guid vendaId, [FromBody] RequestAtualizarVendaJSON request)
+        {
+            var response = _atualizarVendaUseCase.Execute(vendaId, request);
+            return Ok(response);
+        }
+
+        [HttpDelete]
+        [Route("{vendaId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult RemoverVenda([FromRoute] Guid vendaId)
+        {
+            _removerVendaUseCase.Execute(vendaId);
+            return NoContent();
+        }
+
+        [HttpPost]
+        [Route("{vendaId}/Pagamentos")]
+        [ProducesResponseType(typeof(ResponseVendaJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult AdicionarPagamento([FromRoute] Guid vendaId, [FromBody] RequestAdicionarPagamentoJSON request)
+        {
+            var response = _adicionarPagamentoVendaUseCase.Execute(vendaId, request);
+            return Ok(response);
+        }
+
+        [HttpDelete]
+        [Route("{vendaId}/Pagamentos")]
+        [ProducesResponseType(typeof(ResponseVendaJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
+        public IActionResult LimparPagamentos([FromRoute] Guid vendaId)
+        {
+            var response = _limparPagamentosVendaUseCase.Execute(vendaId);
+            return Ok(response);
+        }
+
         [HttpPost]
         [Route("{vendaId}/Finalizar")]
         [ProducesResponseType(typeof(ResponseVendaJSON), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseErrorMessagesJSON), StatusCodes.Status404NotFound)]
         public IActionResult FinalizarVenda([FromRoute] Guid vendaId)
         {
