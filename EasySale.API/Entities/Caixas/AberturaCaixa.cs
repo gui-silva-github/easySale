@@ -1,4 +1,4 @@
-﻿using EasySale.API.Entities.Vendas;
+using EasySale.API.Entities.Vendas;
 
 namespace EasySale.API.Entities.Caixas
 {
@@ -12,5 +12,6 @@ namespace EasySale.API.Entities.Caixas
         public decimal? ValorFinal { get; set; }
         public bool EstaAberto { get; set; }
         public List<Venda> Vendas { get; set; } = [];
+        public List<MovimentoCaixa> Movimentos { get; set; } = [];
     }
 }
