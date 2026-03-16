@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using EasySale.API.Entities.Clientes;
 using EasySale.API.Entities.Produtos;
 using EasySale.API.Entities.Caixas;
@@ -14,7 +14,10 @@ namespace EasySale.API.Infrastructure
         public DbSet<Produto> Produtos { get; set; } = default!;
         public DbSet<Caixa> Caixas { get; set; } = default!;
         public DbSet<AberturaCaixa> AberturasCaixa { get; set; } = default!;
+        public DbSet<MovimentoCaixa> MovimentosCaixa { get; set; } = default!;
         public DbSet<Venda> Vendas { get; set; } = default!;
         public DbSet<ItemVenda> ItensVenda { get; set; } = default!;
+        public DbSet<FormaPagamento> FormasPagamento { get; set; } = default!;
+        public DbSet<PagamentoVenda> PagamentosVenda { get; set; } = default!;
     }
 }
