@@ -1,4 +1,4 @@
-﻿using Communication.Requests.Venda;
+using Communication.Requests.Venda;
 using Communication.Responses.Venda;
 using EasySale.API.Infrastructure;
 using EasySale.API.UseCases.Venda.SharedValidator;
@@ -74,14 +74,28 @@ namespace EasySale.API.UseCases.Venda.AdicionarItem
                     Subtotal = i.Subtotal
                 })
                 .ToList();
-    
+            var pagamentos = _dbContext.PagamentosVenda
+                .Where(p => p.VendaId == vendaId)
+                .Select(p => new ResponsePagamentoVendaJSON
+                {
+                    Id = p.Id,
+                    FormaPagamentoId = p.FormaPagamentoId,
+                    FormaPagamentoDescricao = p.FormaPagamento.Descricao,
+                    PermiteTroco = p.FormaPagamento.PermiteTroco,
+                    Valor = p.Valor,
+                    ValorTroco = p.ValorTroco
+                })
+                .ToList();
+
             return new ResponseVendaJSON
             {
                 Id = venda.Id,
                 AberturaCaixaId = venda.AberturaCaixaId,
                 DataVenda = venda.DataVenda,
                 ValorTotal = venda.ValorTotal,
-                Itens = itens
+                Status = venda.Status,
+                Itens = itens,
+                Pagamentos = pagamentos
             };
         }
 

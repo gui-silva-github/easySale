@@ -1,4 +1,4 @@
-﻿using Communication.Responses.Venda;
+using Communication.Responses.Venda;
 using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
@@ -35,7 +35,7 @@ namespace EasySale.API.UseCases.Venda.CriarVenda
                     .Where(i => i.VendaId == vendaExistente.Id)
                     .Select(i => new ResponseItemVendaJSON
                     {
-                        Id = i.VendaId,
+                        Id = i.Id,
                         ProdutoId = i.ProdutoId,
                         ProdutoNome = i.Produto.Nome,
                         Quantidade = i.Quantidade,
@@ -50,7 +50,9 @@ namespace EasySale.API.UseCases.Venda.CriarVenda
                     AberturaCaixaId = vendaExistente.AberturaCaixaId,
                     DataVenda = vendaExistente.DataVenda,
                     ValorTotal = vendaExistente.ValorTotal,
-                    Itens = itens
+                    Status = vendaExistente.Status,
+                    Itens = itens,
+                    Pagamentos = []
                 };
             }
 
@@ -70,7 +72,9 @@ namespace EasySale.API.UseCases.Venda.CriarVenda
                 AberturaCaixaId = venda.AberturaCaixaId,
                 DataVenda = venda.DataVenda,
                 ValorTotal = venda.ValorTotal,
-                Itens = []
+                Status = venda.Status,
+                Itens = [],
+                Pagamentos = []
             };
         }
     }

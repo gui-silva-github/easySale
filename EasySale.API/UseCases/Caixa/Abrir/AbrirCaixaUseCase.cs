@@ -1,4 +1,4 @@
-﻿using Communication.Requests.Caixa;
+using Communication.Requests.Caixa;
 using Communication.Responses.Caixa;
 using EasySale.API.Infrastructure;
 using EasySale.API.UseCases.Caixa.SharedValidator;
@@ -48,9 +48,14 @@ namespace EasySale.API.UseCases.Caixa.Abrir
             {
                 Id = abertura.Id,
                 CaixaId = abertura.CaixaId,
+                CaixaDescricao = caixa.Descricao,
                 DataAbertura = abertura.DataAbertura,
                 ValorInicial = abertura.ValorInicial,
-                EstaAberto = abertura.EstaAberto
+                EstaAberto = abertura.EstaAberto,
+                TotalVendas = 0,
+                TotalSuprimentos = 0,
+                TotalSangrias = 0,
+                SaldoEsperado = abertura.ValorInicial
             };
         }
 

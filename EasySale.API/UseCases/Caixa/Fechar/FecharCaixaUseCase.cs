@@ -1,4 +1,4 @@
-﻿using EasySale.API.Infrastructure;
+using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
 
@@ -23,13 +23,19 @@ namespace EasySale.API.UseCases.Caixa.Fechar
                 .FirstOrDefault(a => a.CaixaId == caixaId && a.EstaAberto);
 
             if (aberturaAtiva == null)
-                throw new NotFoundException("Não existe abertura ativa para este caixa.");
+                return;
 
             var totalVendas = _dbContext.Vendas
-                .Where(v => v.AberturaCaixaId == aberturaAtiva.Id)
+                .Where(v => v.AberturaCaixaId == aberturaAtiva.Id && v.Status == "Finalizada")
                 .Sum(v => v.ValorTotal);
+            var totalSuprimentos = _dbContext.MovimentosCaixa
+                .Where(m => m.AberturaCaixaId == aberturaAtiva.Id && m.Tipo == "Suprimento")
+                .Sum(m => m.Valor);
+            var totalSangrias = _dbContext.MovimentosCaixa
+                .Where(m => m.AberturaCaixaId == aberturaAtiva.Id && m.Tipo == "Sangria")
+                .Sum(m => m.Valor);
 
-            var valorFinal = aberturaAtiva.ValorInicial + totalVendas;
+            var valorFinal = aberturaAtiva.ValorInicial + totalVendas + totalSuprimentos - totalSangrias;
 
             aberturaAtiva.DataFechamento = DateTime.UtcNow;
             aberturaAtiva.ValorFinal = valorFinal;

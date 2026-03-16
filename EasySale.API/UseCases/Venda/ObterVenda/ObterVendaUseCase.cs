@@ -1,4 +1,4 @@
-﻿using Communication.Responses.Venda;
+using Communication.Responses.Venda;
 using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
@@ -32,13 +32,28 @@ namespace EasySale.API.UseCases.Venda.ObterVenda
                 })
                 .ToList();
 
+            var pagamentos = _dbContext.PagamentosVenda
+                .Where(p => p.VendaId == vendaId)
+                .Select(p => new ResponsePagamentoVendaJSON
+                {
+                    Id = p.Id,
+                    FormaPagamentoId = p.FormaPagamentoId,
+                    FormaPagamentoDescricao = p.FormaPagamento.Descricao,
+                    PermiteTroco = p.FormaPagamento.PermiteTroco,
+                    Valor = p.Valor,
+                    ValorTroco = p.ValorTroco
+                })
+                .ToList();
+
             return new ResponseVendaJSON
             {
                 Id = venda.Id,
                 AberturaCaixaId = venda.AberturaCaixaId,
                 DataVenda = venda.DataVenda,
                 ValorTotal = venda.ValorTotal,
-                Itens = itens
+                Status = venda.Status,
+                Itens = itens,
+                Pagamentos = pagamentos
             };
         }
     }

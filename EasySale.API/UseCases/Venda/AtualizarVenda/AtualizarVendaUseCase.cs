@@ -1,37 +1,56 @@
+using Communication.Requests.Venda;
 using Communication.Responses.Venda;
 using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
-namespace EasySale.API.UseCases.Venda.RemoverItem
+namespace EasySale.API.UseCases.Venda.AtualizarVenda
 {
-    public class RemoverItemVendaUseCase
+    public class AtualizarVendaUseCase
     {
         private readonly EasySaleDbContext _dbContext;
 
-        public RemoverItemVendaUseCase(EasySaleDbContext dbContext)
+        public AtualizarVendaUseCase(EasySaleDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
-        public ResponseVendaJSON Execute(Guid vendaId, Guid itemId)
+        public ResponseVendaJSON Execute(Guid vendaId, RequestAtualizarVendaJSON request)
         {
             var venda = _dbContext.Vendas.FirstOrDefault(v => v.Id == vendaId);
             if (venda == null)
                 throw new NotFoundException("Venda não encontrada.");
 
-            var item = _dbContext.ItensVenda.FirstOrDefault(i => i.Id == itemId && i.VendaId == vendaId);
-            if (item == null)
-                throw new NotFoundException("Item não encontrado na venda.");
+            if (venda.Status != "Aberta")
+                throw new ErrorOnValidateException(new List<string> { "Só é possível editar venda aberta." });
 
-            _dbContext.ItensVenda.Remove(item);
+            if (request.Itens != null && request.Itens.Count > 0)
+            {
+                var itensAtuais = _dbContext.ItensVenda.Where(i => i.VendaId == vendaId).ToList();
+                _dbContext.ItensVenda.RemoveRange(itensAtuais);
 
-            venda.ValorTotal = _dbContext.ItensVenda
-                .Where(i => i.VendaId == vendaId)
-                .Sum(i => i.Subtotal);
+                foreach (var item in request.Itens)
+                {
+                    var produto = _dbContext.Produtos.FirstOrDefault(p => p.Id == item.ProdutoId);
+                    if (produto == null)
+                        throw new NotFoundException($"Produto {item.ProdutoId} não encontrado.");
+                    var preco = item.PrecoUnitario ?? produto.Preco;
+                    var subtotal = preco * item.Quantidade;
+                    _dbContext.ItensVenda.Add(new Entities.Vendas.ItemVenda
+                    {
+                        VendaId = vendaId,
+                        ProdutoId = item.ProdutoId,
+                        Quantidade = item.Quantidade,
+                        PrecoUnitario = preco,
+                        Subtotal = subtotal
+                    });
+                }
+
+                venda.ValorTotal = _dbContext.ItensVenda.Where(i => i.VendaId == vendaId).Sum(i => i.Subtotal);
+            }
 
             _dbContext.SaveChanges();
 
-            var itens = _dbContext.ItensVenda
+            var itensResp = _dbContext.ItensVenda
                 .Where(i => i.VendaId == vendaId)
                 .Select(i => new ResponseItemVendaJSON
                 {
@@ -63,7 +82,7 @@ namespace EasySale.API.UseCases.Venda.RemoverItem
                 DataVenda = venda.DataVenda,
                 ValorTotal = venda.ValorTotal,
                 Status = venda.Status,
-                Itens = itens,
+                Itens = itensResp,
                 Pagamentos = pagamentos
             };
         }

@@ -1,36 +1,58 @@
+using Communication.Requests.Venda;
 using Communication.Responses.Venda;
 using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
-namespace EasySale.API.UseCases.Venda.RemoverItem
+namespace EasySale.API.UseCases.Venda.AdicionarPagamento
 {
-    public class RemoverItemVendaUseCase
+    public class AdicionarPagamentoVendaUseCase
     {
         private readonly EasySaleDbContext _dbContext;
 
-        public RemoverItemVendaUseCase(EasySaleDbContext dbContext)
+        public AdicionarPagamentoVendaUseCase(EasySaleDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
-        public ResponseVendaJSON Execute(Guid vendaId, Guid itemId)
+        public ResponseVendaJSON Execute(Guid vendaId, RequestAdicionarPagamentoJSON request)
         {
+            if (request.Valor <= 0)
+                throw new ErrorOnValidateException(new List<string> { "Valor do pagamento deve ser maior que zero." });
+
             var venda = _dbContext.Vendas.FirstOrDefault(v => v.Id == vendaId);
             if (venda == null)
                 throw new NotFoundException("Venda não encontrada.");
 
-            var item = _dbContext.ItensVenda.FirstOrDefault(i => i.Id == itemId && i.VendaId == vendaId);
-            if (item == null)
-                throw new NotFoundException("Item não encontrado na venda.");
+            if (venda.Status != "Aberta")
+                throw new ErrorOnValidateException(new List<string> { "Só é possível adicionar pagamento em venda aberta." });
 
-            _dbContext.ItensVenda.Remove(item);
+            var forma = _dbContext.FormasPagamento.FirstOrDefault(f => f.Id == request.FormaPagamentoId);
+            if (forma == null)
+                throw new NotFoundException("Forma de pagamento não encontrada.");
 
-            venda.ValorTotal = _dbContext.ItensVenda
-                .Where(i => i.VendaId == vendaId)
-                .Sum(i => i.Subtotal);
+            if (forma.PermiteTroco && request.ValorTroco.HasValue && request.ValorTroco < 0)
+                throw new ErrorOnValidateException(new List<string> { "Valor de troco inválido." });
 
+            if (!forma.PermiteTroco && request.ValorTroco.HasValue && request.ValorTroco != 0)
+                throw new ErrorOnValidateException(new List<string> { "Esta forma de pagamento não permite troco." });
+
+            var pagamento = new Entities.Vendas.PagamentoVenda
+            {
+                VendaId = vendaId,
+                FormaPagamentoId = request.FormaPagamentoId,
+                Valor = request.Valor,
+                ValorTroco = forma.PermiteTroco ? request.ValorTroco : null
+            };
+
+            _dbContext.PagamentosVenda.Add(pagamento);
             _dbContext.SaveChanges();
 
+            return BuildResponse(vendaId);
+        }
+
+        private ResponseVendaJSON BuildResponse(Guid vendaId)
+        {
+            var venda = _dbContext.Vendas.First(v => v.Id == vendaId);
             var itens = _dbContext.ItensVenda
                 .Where(i => i.VendaId == vendaId)
                 .Select(i => new ResponseItemVendaJSON

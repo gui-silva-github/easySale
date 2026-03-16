@@ -1,4 +1,4 @@
-﻿using EasySale.API.Infrastructure;
+using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
 namespace EasySale.API.UseCases.Caixa.Selecionar
@@ -13,7 +13,7 @@ namespace EasySale.API.UseCases.Caixa.Selecionar
             _dbContext = dbContext;
         }
 
-        public void Execute(Guid caixaId)
+        public Guid Execute(Guid caixaId)
         {
             var caixa = _dbContext.Caixas.FirstOrDefault(c => c.Id == caixaId);
             if (caixa == null)
@@ -21,6 +21,13 @@ namespace EasySale.API.UseCases.Caixa.Selecionar
 
             if (caixa.Status != "Aberto")
                 throw new ErrorOnValidateException(new List<string> { "Caixa não está aberto." });
+
+            var abertura = _dbContext.AberturasCaixa
+                .FirstOrDefault(a => a.CaixaId == caixaId && a.EstaAberto);
+            if (abertura == null)
+                throw new NotFoundException("Abertura ativa não encontrada para este caixa.");
+
+            return abertura.Id;
         }
     }
 }

@@ -2,33 +2,28 @@ using Communication.Responses.Venda;
 using EasySale.API.Infrastructure;
 using Exceptions.ExceptionsBase;
 
-namespace EasySale.API.UseCases.Venda.RemoverItem
+namespace EasySale.API.UseCases.Venda.LimparPagamentos
 {
-    public class RemoverItemVendaUseCase
+    public class LimparPagamentosVendaUseCase
     {
         private readonly EasySaleDbContext _dbContext;
 
-        public RemoverItemVendaUseCase(EasySaleDbContext dbContext)
+        public LimparPagamentosVendaUseCase(EasySaleDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
-        public ResponseVendaJSON Execute(Guid vendaId, Guid itemId)
+        public ResponseVendaJSON Execute(Guid vendaId)
         {
             var venda = _dbContext.Vendas.FirstOrDefault(v => v.Id == vendaId);
             if (venda == null)
                 throw new NotFoundException("Venda não encontrada.");
 
-            var item = _dbContext.ItensVenda.FirstOrDefault(i => i.Id == itemId && i.VendaId == vendaId);
-            if (item == null)
-                throw new NotFoundException("Item não encontrado na venda.");
+            if (venda.Status != "Aberta")
+                throw new ErrorOnValidateException(new List<string> { "Só é possível limpar pagamentos de venda aberta." });
 
-            _dbContext.ItensVenda.Remove(item);
-
-            venda.ValorTotal = _dbContext.ItensVenda
-                .Where(i => i.VendaId == vendaId)
-                .Sum(i => i.Subtotal);
-
+            var pagamentos = _dbContext.PagamentosVenda.Where(p => p.VendaId == vendaId).ToList();
+            _dbContext.PagamentosVenda.RemoveRange(pagamentos);
             _dbContext.SaveChanges();
 
             var itens = _dbContext.ItensVenda
@@ -43,18 +38,6 @@ namespace EasySale.API.UseCases.Venda.RemoverItem
                     Subtotal = i.Subtotal
                 })
                 .ToList();
-            var pagamentos = _dbContext.PagamentosVenda
-                .Where(p => p.VendaId == vendaId)
-                .Select(p => new ResponsePagamentoVendaJSON
-                {
-                    Id = p.Id,
-                    FormaPagamentoId = p.FormaPagamentoId,
-                    FormaPagamentoDescricao = p.FormaPagamento.Descricao,
-                    PermiteTroco = p.FormaPagamento.PermiteTroco,
-                    Valor = p.Valor,
-                    ValorTroco = p.ValorTroco
-                })
-                .ToList();
 
             return new ResponseVendaJSON
             {
@@ -64,7 +47,7 @@ namespace EasySale.API.UseCases.Venda.RemoverItem
                 ValorTotal = venda.ValorTotal,
                 Status = venda.Status,
                 Itens = itens,
-                Pagamentos = pagamentos
+                Pagamentos = new List<ResponsePagamentoVendaJSON>()
             };
         }
     }
