@@ -3,3 +3,9 @@ export interface RequestAddSaleItem {
     quantidade: number;
     precoUnitario?: number;
 }
+
+export interface RequestAddPayment {
+    formaPagamentoId: string;
+    valor: number;
+    valorTroco?: number;
+}
