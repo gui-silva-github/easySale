@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { NavLink } from "react-router-dom";
-import { nav } from "@/utils";
+import { nav } from "@/utils/nav";
 import { cn } from "@/lib/utils";
 
 export const Sidebar: FC = () => {
