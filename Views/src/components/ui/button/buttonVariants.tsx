@@ -10,6 +10,7 @@ export const buttonVariants = cva(
         outline: 'border border-slate-200 bg-white hover:bg-slate-100',
         ghost: 'hover:bg-slate-100',
         link: 'text-slate-900 underline-offset-4 hover:underline',
+        success: 'bg-green-600 text-white hover:bg-green-700',
       },
       size: {
         default: 'h-9 px-4 py-2',

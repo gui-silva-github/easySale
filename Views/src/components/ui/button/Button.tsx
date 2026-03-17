@@ -15,6 +15,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : 'button';
     return (
       <Comp
+        style={{ cursor: 'pointer' }}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
