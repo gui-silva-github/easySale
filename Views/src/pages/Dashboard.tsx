@@ -1,17 +1,15 @@
 import { FC } from "react";
-import { useGetClients } from "@/hooks/clients/useClients";
-import { useGetProducts } from "@/hooks/products/useProducts";
-import { useGetCashRegisters } from "@/hooks/cashiers/useCashRegisters";
 import { Users, Package, Banknote } from "lucide-react";
+import { useListCallAPI } from "./Dashboard/hooks/useListCallAPI";
+import { useListMemorizations } from "./Dashboard/hooks/useListMemorizations";
 
 export const Dashboard: FC = () => {
-    const { data: clients = [] } = useGetClients();
-    const { data: products = [] } = useGetProducts();
-    const { data: cashiers = [] } = useGetCashRegisters();
+    const { clients, loadingClients, products, loadingProducts, cashiers, loadingCashiers } = useListCallAPI();
+    const { loading } = useListMemorizations({ loadingClients, loadingProducts, loadingCashiers });
 
     const cards = [
         { label: 'Clientes', value: clients.length, icon: Users, color: 'bg-blue-500' },
-        { label: 'Produtos', value: products.length, icon: Package, color: 'bg-esmerald-500' },
+        { label: 'Produtos', value: products.length, icon: Package, color: 'bg-emerald-500' },
         { label: 'Caixas', value: cashiers.length, icon: Banknote, color: 'bg-amber-500' }
     ];
 
