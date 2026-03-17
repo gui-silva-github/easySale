@@ -1,7 +1,3 @@
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -12,101 +8,61 @@ import {
 import { Button } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { useCreateClient, useUpdateClient, useGetClientById } from '@/hooks/clients/useClients';
-import type { ClientShort } from '@/types/clients/responses';
+import { FC } from 'react';
+import { useListFunctions } from './hooks/useListFunctions';
+import { IClientModal } from './interfaces';
+import { useQueryClient } from '@tanstack/react-query';
 
-const schema = z.object({
-  nome: z.string().min(1, 'Nome obrigatório'),
-  email: z.string().email('Email inválido'),
-});
-
-type FormData = z.infer<typeof schema>;
-
-interface ClientModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  mode: 'create' | 'edit';
-  client?: ClientShort;
-}
-
-export function ClientModal({
+export const ClientModal: FC<IClientModal> = ({
   open,
   onOpenChange,
   mode,
   client,
-}: ClientModalProps) {
+}) => {
+  const queryClient = useQueryClient();
+
   const createMutation = useCreateClient();
   const updateMutation = useUpdateClient();
+
   const { data: fullClient } = useGetClientById(mode === 'edit' && client ? client.id : null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      nome: '',
-      email: '',
-    },
-  });
-
-  useEffect(() => {
-    if (mode === 'edit' && fullClient) {
-      reset({ nome: fullClient.nome, email: fullClient.email });
-    } else if (mode === 'create') {
-      reset({ nome: '', email: '' });
-    }
-  }, [mode, fullClient, reset]);
-
-  const onSubmit = (data: FormData) => {
-    if (mode === 'create') {
-      createMutation.mutate(data, {
-        onSuccess: () => {
-          reset();
-          onOpenChange(false);
-        },
-      });
-    } else if (client) {
-      updateMutation.mutate(
-        { id: client.id, data },
-        {
-          onSuccess: () => {
-            onOpenChange(false);
-          },
-        }
-      );
-    }
-  };
+  const { register, handleSubmit, errors, onSubmit } = useListFunctions({ mode, client, fullClient, onOpenChange, createMutation, updateMutation, qc: queryClient });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Novo cliente' : 'Editar cliente'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Nome</label>
-            <Input {...register('nome')} placeholder="Nome" />
-            {errors.nome && (
-              <p className="mt-1 text-sm text-red-600">{errors.nome.message}</p>
-            )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
+          <div className="space-y-4 rounded-lg border border-slate-200 bg-white px-4 py-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Nome</label>
+              <Input
+                {...register('nome')}
+                placeholder="Nome completo"
+                error={!!errors.nome}
+              />
+              {errors.nome && (
+                <p className="mt-1 text-sm text-red-600">{errors.nome.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Email</label>
+              <Input
+                {...register('email')}
+                type="email"
+                placeholder="email@exemplo.com"
+                error={!!errors.email}
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
-            <Input
-              {...register('email')}
-              type="email"
-              placeholder="email@exemplo.com"
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-            )}
-          </div>
-          <DialogFooter>
+          <DialogFooter className="mt-2 border-t border-slate-100 pt-4">
             <Button
               type="button"
               variant="outline"
