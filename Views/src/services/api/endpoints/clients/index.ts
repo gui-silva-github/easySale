@@ -1,12 +1,13 @@
 import { api } from "@/services/api/axios";
 import type { Client, ClientShort } from "@/types/clients/responses";
 import type { RequestClient } from "@/types/clients/requests";
-import { backendURL } from "@/utils";
+import { backendURL } from "@/utils/url";
 
 export const clientsAPI = {
     getAll: () =>
         api.get<{ clientes: ClientShort[] }>(`${backendURL}/api/Cliente`).then((r) => {
             if (r.status === 204) return { data: { clientes: [] } };
+            return r;
         }),
     getById: (id: string) =>
         api.get<Client>(`${backendURL}/api/Cliente/${id}`),
