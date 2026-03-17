@@ -1,3 +1,3 @@
 export interface IUseListMemorizations {
-    loading?: boolean;
+    isLoading: boolean;
 }

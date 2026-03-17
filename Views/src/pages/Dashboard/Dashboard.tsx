@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { Users, Package, Banknote } from "lucide-react";
-import { useListCallAPI } from "./Dashboard/hooks/useListCallAPI";
-import { useListMemorizations } from "./Dashboard/hooks/useListMemorizations";
+import { useListCallAPI } from "./hooks/useListCallAPI";
+import { useListMemorizations } from "./hooks/useListMemorizations";
 
 export const Dashboard: FC = () => {
     const { clients, loadingClients, products, loadingProducts, cashiers, loadingCashiers } = useListCallAPI();

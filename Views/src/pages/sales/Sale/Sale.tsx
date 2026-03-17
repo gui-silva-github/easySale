@@ -6,10 +6,10 @@ import { PaymentModal } from '@/components/modals/sales/PaymentModal';
 import { setStoredAberturaId } from '@/utils/sessionStorage';
 import toast from 'react-hot-toast';
 import { Trash2 } from 'lucide-react';
-import { useListStates } from './Sale/hooks/useListStates';
-import { useListCallAPI } from './Sale/hooks/useListCallAPI';
-import { useListMemorizations } from './Sale/hooks/useListMemorizations';
-import { useListFunctions } from './Sale/hooks/useListFunctions';
+import { useListStates } from './hooks/useListStates';
+import { useListCallAPI } from './hooks/useListCallAPI';
+import { useListMemorizations } from './hooks/useListMemorizations';
+import { useListFunctions } from './hooks/useListFunctions';
 
 export const SaleComponent: FC = () => {
     const { openingId } = useParams<{ openingId: string }>();
