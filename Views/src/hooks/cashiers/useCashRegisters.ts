@@ -45,17 +45,26 @@ export const useGetCashRegisterById = (id: string | null) =>
         enabled: !!id,
     })
 
-export const useGetOpening = (caixaId: string | null) =>
+export const useGetOpening = (aberturaId: string | null, enabled = true) =>
     useQuery({
-        queryKey: cashRegistersKeys.opening(caixaId ?? ''),
-        queryFn: () => cashRegistersAPI.getOpeningId(caixaId!).then((r) => r.data),
-        enabled: !!caixaId,
+        queryKey: [...cashRegistersKeys.open, 'current', aberturaId ?? ''] as const,
+        queryFn: async () => {
+            if (!aberturaId) return null;
+            try {
+                const r = await cashRegistersAPI.getCurrentOpening(aberturaId, undefined);
+                return r.data;
+            } catch {
+                return null;
+            }
+        },
+        enabled: !!(enabled && aberturaId),
+        retry: false,
     });
 
 export const useCreateCashRegister = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (data: RequestCashier) => cashRegistersAPI.create(data),
+        mutationFn: (data: RequestCashier) => cashRegistersAPI.create(data).then((r) => r.data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: cashRegistersKeys.all });
             qc.invalidateQueries({ queryKey: cashRegistersKeys.available });
@@ -68,7 +77,7 @@ export const useOpenCashRegister = () => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: ({ caixaId, data }: { caixaId: string, data: RequestOpenCashier }) =>
-            cashRegistersAPI.open(caixaId, data),
+            cashRegistersAPI.open(caixaId, data).then((r) => r.data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: cashRegistersKeys.all });
             qc.invalidateQueries({ queryKey: cashRegistersKeys.available });
@@ -94,7 +103,7 @@ export const useCloseCashRegister = () => {
 export const useSelectCashRegister = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (id: string) => cashRegistersAPI.select(id),
+        mutationFn: (id: string) => cashRegistersAPI.select(id).then((r) => r.data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: cashRegistersKeys.open });
         }

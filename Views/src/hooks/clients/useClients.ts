@@ -27,7 +27,7 @@ export const useGetClientById = (id: string | null) =>
 export const useCreateClient = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (data: RequestClient) => clientsAPI.create(data),
+        mutationFn: (data: RequestClient) => clientsAPI.create(data).then((r) => r.data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: clientsKey.all });
             toast.success('Cliente criado');
@@ -38,8 +38,9 @@ export const useCreateClient = () => {
 export const useUpdateClient = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, data }: { id: string, data: RequestClient }) =>
-            clientsAPI.update(id, data),
+        mutationFn: async ({ id, data }: { id: string, data: RequestClient }): Promise<void> => {
+            await clientsAPI.update(id, data);
+        },
         onSuccess: (_, v) => {
             qc.invalidateQueries({ queryKey: clientsKey.all });
             qc.invalidateQueries({ queryKey: clientsKey.detail(v.id) });
