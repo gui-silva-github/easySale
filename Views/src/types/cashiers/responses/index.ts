@@ -18,11 +18,44 @@ export interface OpenCashier {
     estaAberto: boolean;
 }
 
-export interface OpenCashierDetailed extends OpenCashier {
+export interface CurrentOpeningResponse {
+    id: string;
+    caixaId: string;
     caixaDescricao: string;
+    dataAbertura: string;
     dataFechamento?: string;
+    valorInicial: number;
     valorFinal?: number;
+    estaAberto: boolean;
     totalVendas: number;
+    totalSuprimentos: number;
+    totalSangrias: number;
     saldoEsperado: number;
-    vendas: Sale[];
+}
+
+export interface OpenCashierDetailed extends CurrentOpeningResponse {
+    vendas?: Sale[];
+}
+
+export interface BlindReceivingResponse {
+    valorEsperado: number;
+    valorInicial: number;
+    totalVendas: number;
+    totalSuprimentos: number;
+    totalSangrias: number;
+}
+
+export interface BlindReceivingFinalResponse {
+    valorEsperado: number;
+    valorInformado: number;
+    diferenca: number;
+    batido: boolean;
+}
+
+export interface CashierMovementResponse {
+    id: string;
+    tipo: string;
+    valor: number;
+    dataMovimento: string;
+    observacao?: string;
 }
